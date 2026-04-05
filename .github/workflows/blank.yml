@@ -1,0 +1,150 @@
+name: RDP-ULTIMATE-GOD-MODE-V5-FINAL
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 3600
+
+    steps:
+      - name: 1. Extreme Optimization & Nuclear Watermark Removal
+        run: |
+          Write-Host "Nuclear Watermark Removal & System Hardening..."
+          # --- ลบลายน้ำ Activation แบบถอนรากถอนโคน ---
+          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation" /v Manual /t REG_DWORD /d 1 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform" /v SkipRearm /t REG_DWORD /d 1 /f
+          
+          # --- ปรับ Performance ขั้นสุด ---
+          reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
+          reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "" /f
+          
+          # ปิดระบบประหยัดพลังงาน
+          powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+          rundll32.exe user32.dll,UpdatePerUserSystemParameters
+
+      - name: 2. Configure RDP & High-Speed Networking (Fixed Ports)
+        run: |
+          Write-Host "Force Enabling RDP and Unlocking Firewall..."
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          
+          # ล้างกฎ Firewall และสร้างใหม่สำหรับ RDP และ Moonlight
+          netsh advfirewall firewall delete rule name="RDP-GodMode" -ErrorAction SilentlyContinue
+          netsh advfirewall firewall add rule name="RDP-GodMode" dir=in action=allow protocol=TCP localport=3389
+          
+          # เปิดพอร์ต Sunshine (Streaming)
+          netsh advfirewall firewall add rule name="Sunshine-TCP" dir=in action=allow protocol=TCP localport=47984,47989,48010
+          netsh advfirewall firewall add rule name="Sunshine-UDP" dir=in action=allow protocol=UDP localport=47998,47999,48000,48002,48010
+          
+          Restart-Service -Name TermService -Force
+
+      - name: 3. Create God-Mode User (Anti-Error 1 Logic)
+        run: |
+          $u = "RDPAdmin"; $p = "GodMode@2026!"
+          if (Get-LocalUser -Name $u -ErrorAction SilentlyContinue) { Remove-LocalUser -Name $u }
+          $secPass = ConvertTo-SecureString $p -AsPlainText -Force
+          New-LocalUser -Name $u -Password $secPass -FullName "Ultimate Administrator" -AccountNeverExpires
+          Add-LocalGroupMember -Group "Administrators" -Member $u
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member $u
+          echo "FINAL_USER=$u" >> $env:GITHUB_ENV
+          echo "FINAL_PASS=$p" >> $env:GITHUB_ENV
+
+      - name: 4. Install GPU Emulation & Fixed Virtual Display Link
+        run: |
+          Write-Host "Installing DirectX and Virtual Display Driver..."
+          # ติดตั้ง DirectX Runtime
+          $dxUrl = "https://download.microsoft.com/download/1/7/1/1718CCC4-6315-4D8E-9543-8E28A4E18C4C/dxwebsetup.exe"
+          Invoke-WebRequest -Uri $dxUrl -OutFile "dx_setup.exe"
+          Start-Process .\dx_setup.exe -ArgumentList "/q" -Wait
+          
+          # แก้ไขลิงก์ Virtual Display Driver (ใช้ Link ของเจ้าของโปรเจกต์เวอร์ชันเสถียรล่าสุด)
+          try {
+              $driverUrl = "https://github.com/ge9/IddSampleDriver/releases/download/v0.1.2/IddSampleDriver.zip"
+              Invoke-WebRequest -Uri $driverUrl -OutFile "driver.zip" -ErrorAction Stop
+              Expand-Archive -Path "driver.zip" -DestinationPath "C:\DisplayDriver" -Force
+              Write-Host "Virtual Display Driver downloaded successfully."
+          } catch {
+              Write-Warning "Link failed, skipping driver install - Sunshine will still work with software capture."
+          }
+
+      - name: 5. Install Sunshine Server (Latest Version)
+        run: |
+          Write-Host "Installing Sunshine..."
+          $sunUrl = "https://github.com/LizardByte/Sunshine/releases/latest/download/sunshine-windows-x86_64-setup.exe"
+          Invoke-WebRequest -Uri $sunUrl -OutFile "sunshine_setup.exe"
+          Start-Process .\sunshine_setup.exe -ArgumentList "/S" -Wait
+
+      - name: 6. Tailscale Deployment (Stable Key Connection)
+        run: |
+          Write-Host "Deploying Tailscale..."
+          $msiUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
+          Invoke-WebRequest -Uri $msiUrl -OutFile "ts.msi"
+          Start-Process msiexec.exe -ArgumentList "/i", "ts.msi", "/quiet", "/norestart" -Wait
+          
+          $tsExe = "C:\Program Files\Tailscale\tailscale.exe"
+          $timeout = 0
+          while (!(Test-Path $tsExe) -and $timeout -lt 25) { Start-Sleep -Seconds 5; $timeout++ }
+          
+          & $tsExe up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-godmode-2026 --accept-dns=false
+          $tsIP = & $tsExe ip -4
+          if (-not $tsIP) { Write-Error "IP NOT FOUND!"; exit 1 }
+          echo "GOD_IP=$tsIP" >> $env:GITHUB_ENV
+
+      - name: 7. Auto-Launch Edge & Sunshine UI
+        run: |
+          $autoScript = @"
+          Start-Process "msedge.exe" "https://login.live.com"
+          Start-Process "msedge.exe" "https://localhost:47990"
+          Add-Type -AssemblyName System.Windows.Forms
+          [System.Windows.Forms.MessageBox]::Show('1. แก้ Captcha ใน Edge\n2. ตั้งค่า Sunshine ที่ localhost:47990', 'God-Mode Guard')
+          "@
+          $autoScript | Out-File "$env:TEMP\auto_start.ps1" -Encoding utf8
+          reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v "GodModeStart" /t REG_SZ /d "powershell.exe -WindowStyle Normal -File $env:TEMP\auto_start.ps1" /f
+
+      - name: 8. Real-Time Ping Monitor UI (Top-Right)
+        run: |
+          $monScript = @"
+          Add-Type -AssemblyName System.Windows.Forms
+          `$l = New-Object System.Windows.Forms.Label
+          `$l.AutoSize = `$true
+          `$l.ForeColor = [System.Drawing.Color]::Lime
+          `$l.BackColor = [System.Drawing.Color]::Black
+          `$l.Font = New-Object System.Drawing.Font('Consolas', 11, [System.Drawing.FontStyle]::Bold)
+          `$f = New-Object System.Windows.Forms.Form
+          `$f.Size = New-Object System.Drawing.Size(160, 40)
+          `$f.Location = New-Object System.Drawing.Point([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width - 170, 10)
+          `$f.StartPosition = 'Manual'
+          `$f.FormBorderStyle = 'None'
+          `$f.TopMost = `$true
+          `$f.TransparencyKey = `$f.BackColor = [System.Drawing.Color]::Black
+          `$f.Controls.Add(`$l)
+          `$t = New-Object System.Windows.Forms.Timer
+          `$t.Interval = 1000
+          `$t.Add_Tick({
+              try {
+                  `$p = Test-Connection 8.8.8.8 -Count 1 -ErrorAction SilentlyContinue
+                  `$l.Text = "PING: `$($p.ResponseTime) ms"
+                  if (`$p.ResponseTime -gt 150) { `$l.ForeColor = [System.Drawing.Color]::Red } else { `$l.ForeColor = [System.Drawing.Color]::Lime }
+              } catch { `$l.Text = "PING: LOST" }
+          })
+          `$t.Start()
+          `$f.ShowDialog()
+          "@
+          $monScript | Out-File "$env:TEMP\mon.ps1" -Encoding utf8
+          Start-Process powershell.exe -ArgumentList "-WindowStyle Hidden -File $env:TEMP\mon.ps1"
+
+      - name: 9. Keep Alive & Status
+        run: |
+          Write-Host "`n========================================"
+          Write-Host "🔱 GOD MODE V5 FIXED & READY!"
+          Write-Host "📍 IP: $env:GOD_IP"
+          Write-Host "👤 User: $env:FINAL_USER"
+          Write-Host "🔑 Pass: $env:FINAL_PASS"
+          Write-Host "========================================`n"
+          while ($true) {
+              $now = Get-Date -Format "HH:mm:ss"
+              Write-Host "[$now] Heartbeat: God-Mode Stable..."
+              Start-Sleep -Seconds 300
+          }
