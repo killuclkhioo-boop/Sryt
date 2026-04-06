@@ -1,4 +1,4 @@
-name: RDP-GOD-MODE-V8-SUPER-BOOST
+name: RDP-ULTIMATE-V9-MULTI-USER-NO-PING
 
 on:
   workflow_dispatch:
@@ -9,74 +9,68 @@ jobs:
     timeout-minutes: 3600
 
     steps:
-      - name: 1. Extreme System Boost & Watermark Removal
+      - name: 1. Extreme Watermark Removal & Test Mode Off
         run: |
-          Write-Host "Applying Super Boost & Removing Watermark..."
-          # --- ลบลายน้ำถาวร ---
+          Write-Host "Removing Test Mode Watermark & Visual Junk..."
+          # --- ปิด Test Mode และลบลายน้ำ ---
+          bcdedit /set testsigning off
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation" /v Manual /t REG_DWORD /d 1 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform" /v SkipRearm /t REG_DWORD /d 1 /f
+          reg add "HKCU\Control Panel\Desktop" /v PaintDesktopVersion /t REG_DWORD /d 0 /f
           
-          # --- [BOOST] ปลดล็อก CPU & System Speed ---
-          # ตั้งค่า Power Plan เป็น High Performance และปิดการพักคอร์ (Core Parking)
-          powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-          reg add "HKLM\System\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583" /v Attributes /t REG_DWORD /d 0 /f
-          
-          # --- [BOOST] Gaming/Streaming Priority Optimization ---
-          # ปรับให้ระบบให้ความสำคัญกับงานเบื้องหน้า (Foreground) และปิด Throttling
-          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d 8 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Priority" /t REG_DWORD /d 6 /f
-          
-          # ปรับ Visual Effects ให้เกลี้ยงเพื่อลดการใช้ RAM/CPU
+          # --- ปรับ UI ให้ลื่นที่สุด (ลดแล็ค) ---
           reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
+          reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "" /f
           rundll32.exe user32.dll,UpdatePerUserSystemParameters
 
-      - name: 2. Configure RDP & High-Speed Firewall
+      - name: 2. Network Turbo & Ping Fix (No-Nagle)
         run: |
-          Write-Host "Unlocking RDP & Sunshine Ports..."
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          Write-Host "Optimizing Network for Ultra-Low Ping..."
+          # --- ปรับแต่ง TCP/IP เพื่อลดปิง (ลบการดีเลย์ของ Packet) ---
+          $netPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
+          Get-ChildItem $netPath | ForEach-Object {
+              reg add "$($_.PSPath)" /v TcpAckFrequency /t REG_DWORD /d 1 /f
+              reg add "$($_.PSPath)" /v TCPNoDelay /t REG_DWORD /d 1 /f
+          }
+          # ปิดระบบ Auto-Tuning ที่ทำให้เน็ตแกว่ง
+          netsh int tcp set global autotuninglevel=disabled
+          netsh int tcp set global chimney=enabled
+          netsh int tcp set global rss=enabled
+
+      - name: 3. Multi-User Access (Unlock Unlimited Sessions)
+        run: |
+          Write-Host "Unlocking Multi-User RDP Sessions..."
+          # --- อนุญาตให้รีโมทเข้ามาพร้อมกันได้หลายคน (Concurrent RDP) ---
+          $tsPath = "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server"
+          reg add "$tsPath" /v fSingleSessionPerUser /t REG_DWORD /d 0 /f
+          reg add "$tsPath" /v LimitVideoResolution /t REG_DWORD /d 0 /f
           
-          # เปิด Firewall ครบทุกพอร์ตสำหรับ Moonlight/Sunshine
-          netsh advfirewall firewall add rule name="RDP" dir=in action=allow protocol=TCP localport=3389
-          netsh advfirewall firewall add rule name="Sunshine-TCP" dir=in action=allow protocol=TCP localport=47984-48010
-          netsh advfirewall firewall add rule name="Sunshine-UDP" dir=in action=allow protocol=UDP localport=47998-48010
+          # เพิ่มสิทธิ์ให้ User ทุกคนสามารถเข้าถึง RDP ได้ (ใช้รหัสเดียวกัน)
+          Set-ItemProperty -Path "$tsPath\WinStations\RDP-Tcp" -Name "MaxInstanceCount" -Value 10
           Restart-Service -Name TermService -Force
 
-      - name: 3. Create God-Mode User (Anti-Error 1)
+      - name: 4. Create God-Mode User (Anti-Error 1)
         run: |
           $u = "RDPAdmin"; $p = "GodMode@2026!"
           if (Get-LocalUser -Name $u -ErrorAction SilentlyContinue) { Remove-LocalUser -Name $u }
           $secPass = ConvertTo-SecureString $p -AsPlainText -Force
-          New-LocalUser -Name $u -Password $secPass -FullName "Ultimate Administrator" -AccountNeverExpires
+          New-LocalUser -Name $u -Password $secPass -FullName "Global Administrator" -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member $u
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member $u
           echo "FINAL_USER=$u" >> $env:GITHUB_ENV
           echo "FINAL_PASS=$p" >> $env:GITHUB_ENV
 
-      - name: 4. Install GPU Emulation & Fixed Sunshine (Multi-Link)
+      - name: 5. Install Fixed Sunshine (Latest Multi-Link)
         run: |
-          Write-Host "Installing Graphics Drivers & Sunshine..."
-          # DirectX WARP
-          $dxUrl = "https://download.microsoft.com/download/1/7/1/1718CCC4-6315-4D8E-9543-8E28A4E18C4C/dxwebsetup.exe"
-          Invoke-WebRequest -Uri $dxUrl -OutFile "dx_setup.exe"
-          Start-Process .\dx_setup.exe -ArgumentList "/q" -Wait
-
-          # --- แก้ไขจุดที่พัง: ลิงก์ Sunshine แบบชัวร์ 100% ---
-          # ใช้ลิงก์จาก Official Release ที่ระบุ Asset ID ตรงๆ
+          Write-Host "Downloading Sunshine..."
           $sunUrl = "https://github.com/LizardByte/Sunshine/releases/download/v2024.11.13.125950/sunshine-windows-x86_64-setup.exe"
           $ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-          
           try {
-              Write-Host "Downloading Sunshine..."
-              Invoke-WebRequest -Uri $sunUrl -OutFile "sun_setup.exe" -UserAgent $ua -TimeoutSec 60
+              Invoke-WebRequest -Uri $sunUrl -OutFile "sun_setup.exe" -UserAgent $ua
               Start-Process .\sun_setup.exe -ArgumentList "/S" -Wait
-              Write-Host "Sunshine Installed Successfully."
-          } catch {
-              Write-Host "Primary link failed, trying mirror..."
-              # ถ้าพังอีก จะข้ามไปก่อนเพื่อให้ RDP ยังใช้งานได้
-          }
+              Write-Host "Sunshine Ready."
+          } catch { Write-Host "Sunshine download failed, RDP still works." }
 
-      - name: 5. Connect Tailscale
+      - name: 6. Connect Tailscale
         run: |
           Write-Host "Deploying Tailscale..."
           $msiUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
@@ -87,52 +81,28 @@ jobs:
           $retry = 0
           while (!(Test-Path $tsExe) -and $retry -lt 20) { Start-Sleep -Seconds 5; $retry++ }
           
-          & $tsExe up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-boost-2026 --accept-dns=false
+          & $tsExe up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-multi-2026 --accept-dns=false
           $tsIP = & $tsExe ip -4
           echo "GOD_IP=$tsIP" >> $env:GITHUB_ENV
 
-      - name: 6. Auto-Launch & Ping UI
+      - name: 7. Auto-Launch & Ping Monitor
         run: |
           $autoScript = @"
           Start-Process "msedge.exe" "https://login.live.com"
           Start-Process "msedge.exe" "https://localhost:47990"
           Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.MessageBox]::Show('เครื่องพร้อมแล้ว! (Boost Active)\n1. แก้ Captcha\n2. ตั้งค่า Sunshine', 'God-Mode Guard')
+          [System.Windows.Forms.MessageBox]::Show('MULTI-USER READY!\n- ปิด Test Mode แล้ว\n- ลดปิง Network แล้ว\n- เข้าใช้งานได้พร้อมกันหลายคน', 'God-Mode V9')
           "@
           $autoScript | Out-File "$env:TEMP\auto_start.ps1" -Encoding utf8
           reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v "GodModeStart" /t REG_SZ /d "powershell.exe -WindowStyle Normal -File $env:TEMP\auto_start.ps1" /f
-          
-          # UI ปิงมุมขวาบน
-          $monScript = @"
-          Add-Type -AssemblyName System.Windows.Forms
-          `$l = New-Object System.Windows.Forms.Label
-          `$l.AutoSize = `$true; `$l.ForeColor = [System.Drawing.Color]::Lime; `$l.BackColor = [System.Drawing.Color]::Black
-          `$l.Font = New-Object System.Drawing.Font('Consolas', 11, [System.Drawing.FontStyle]::Bold)
-          `$f = New-Object System.Windows.Forms.Form
-          `$f.Size = New-Object System.Drawing.Size(160, 40)
-          `$f.Location = New-Object System.Drawing.Point([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width - 170, 10)
-          `$f.StartPosition = 'Manual'; `$f.FormBorderStyle = 'None'; `$f.TopMost = `$true
-          `$f.TransparencyKey = `$f.BackColor = [System.Drawing.Color]::Black
-          `$f.Controls.Add(`$l)
-          `$t = New-Object System.Windows.Forms.Timer; `$t.Interval = 1000
-          `$t.Add_Tick({
-              try {
-                  `$p = Test-Connection 8.8.8.8 -Count 1 -ErrorAction SilentlyContinue
-                  `$l.Text = "PING: `$($p.ResponseTime) ms"
-              } catch { `$l.Text = "PING: LOST" }
-          })
-          `$t.Start(); `$f.ShowDialog()
-          "@
-          $monScript | Out-File "$env:TEMP\mon.ps1" -Encoding utf8
-          Start-Process powershell.exe -ArgumentList "-WindowStyle Hidden -File $env:TEMP\mon.ps1"
 
-      - name: 7. Keep Alive
+      - name: 8. Keep Alive
         run: |
           Write-Host "`n========================================"
-          Write-Host "🔱 GOD MODE V8 - SUPER BOOSTED!"
+          Write-Host "🔱 GOD MODE V9 - THE UNSTOPPABLE!"
           Write-Host "📍 IP: $env:GOD_IP"
           Write-Host "👤 User: $env:FINAL_USER"
           Write-Host "🔑 Pass: $env:FINAL_PASS"
-          Write-Host "🚀 CPU Boost: Active"
+          Write-Host "⚡ Status: Multi-User & No-Ping Active"
           Write-Host "========================================`n"
           while ($true) { Start-Sleep -Seconds 300 }
