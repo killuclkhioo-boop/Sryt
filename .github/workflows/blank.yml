@@ -1,4 +1,4 @@
-name: RDP-ULTIMATE-V9-MULTI-USER-NO-PING
+name: RDP-GOD-MODE-V11-OMNIPOTENT
 
 on:
   workflow_dispatch:
@@ -9,100 +9,98 @@ jobs:
     timeout-minutes: 3600
 
     steps:
-      - name: 1. Extreme Watermark Removal & Test Mode Off
+      - name: 1. Speed Boost & Watermark Nuclear (Test Mode Off)
         run: |
-          Write-Host "Removing Test Mode Watermark & Visual Junk..."
-          # --- ปิด Test Mode และลบลายน้ำ ---
+          Write-Host "Optimizing Windows Performance..."
+          # ปิด Test Mode และลบลายน้ำ
           bcdedit /set testsigning off
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation" /v Manual /t REG_DWORD /d 1 /f
-          reg add "HKCU\Control Panel\Desktop" /v PaintDesktopVersion /t REG_DWORD /d 0 /f
-          
-          # --- ปรับ UI ให้ลื่นที่สุด (ลดแล็ค) ---
+          # ปรับ Visual ให้ลื่น (หายแล็ค)
           reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
+          # ปลดล็อก CPU Power
+          powercfg /setactive 8c5e7fda-e8bf-4a95-9a85-a6e23a8c635c
+          # ลบ Wallpaper ลดภาระ RAM
           reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "" /f
           rundll32.exe user32.dll,UpdatePerUserSystemParameters
 
-      - name: 2. Network Turbo & Ping Fix (No-Nagle)
+      - name: 2. Network Turbo & Multi-User Access
         run: |
-          Write-Host "Optimizing Network for Ultra-Low Ping..."
-          # --- ปรับแต่ง TCP/IP เพื่อลดปิง (ลบการดีเลย์ของ Packet) ---
+          Write-Host "Network Tuning & Unlocking Multi-User..."
+          # ลดปิงขั้นเทพ (No-Nagle)
           $netPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
-          Get-ChildItem $netPath | ForEach-Object {
-              reg add "$($_.PSPath)" /v TcpAckFrequency /t REG_DWORD /d 1 /f
-              reg add "$($_.PSPath)" /v TCPNoDelay /t REG_DWORD /d 1 /f
-          }
-          # ปิดระบบ Auto-Tuning ที่ทำให้เน็ตแกว่ง
-          netsh int tcp set global autotuninglevel=disabled
-          netsh int tcp set global chimney=enabled
-          netsh int tcp set global rss=enabled
-
-      - name: 3. Multi-User Access (Unlock Unlimited Sessions)
-        run: |
-          Write-Host "Unlocking Multi-User RDP Sessions..."
-          # --- อนุญาตให้รีโมทเข้ามาพร้อมกันได้หลายคน (Concurrent RDP) ---
-          $tsPath = "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server"
-          reg add "$tsPath" /v fSingleSessionPerUser /t REG_DWORD /d 0 /f
-          reg add "$tsPath" /v LimitVideoResolution /t REG_DWORD /d 0 /f
-          
-          # เพิ่มสิทธิ์ให้ User ทุกคนสามารถเข้าถึง RDP ได้ (ใช้รหัสเดียวกัน)
-          Set-ItemProperty -Path "$tsPath\WinStations\RDP-Tcp" -Name "MaxInstanceCount" -Value 10
+          Get-ChildItem $netPath | ForEach-Object { reg add "$($_.PSPath)" /v TcpAckFrequency /t REG_DWORD /d 1 /f; reg add "$($_.PSPath)" /v TCPNoDelay /t REG_DWORD /d 1 /f }
+          # ปลดล็อกรีโมทพร้อมกัน 10 คน
+          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fSingleSessionPerUser /t REG_DWORD /d 0 /f
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
           Restart-Service -Name TermService -Force
 
-      - name: 4. Create God-Mode User (Anti-Error 1)
+      - name: 3. Create Admin User (Anti-Error 1)
         run: |
           $u = "RDPAdmin"; $p = "GodMode@2026!"
           if (Get-LocalUser -Name $u -ErrorAction SilentlyContinue) { Remove-LocalUser -Name $u }
           $secPass = ConvertTo-SecureString $p -AsPlainText -Force
-          New-LocalUser -Name $u -Password $secPass -FullName "Global Administrator" -AccountNeverExpires
+          New-LocalUser -Name $u -Password $secPass -FullName "Ultimate Admin" -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member $u
-          Add-LocalGroupMember -Group "Remote Desktop Users" -Member $u
           echo "FINAL_USER=$u" >> $env:GITHUB_ENV
           echo "FINAL_PASS=$p" >> $env:GITHUB_ENV
 
-      - name: 5. Install Fixed Sunshine (Latest Multi-Link)
+      - name: 4. Silent Install: Sunshine, Tailscale & Ngrok
         run: |
-          Write-Host "Downloading Sunshine..."
-          $sunUrl = "https://github.com/LizardByte/Sunshine/releases/download/v2024.11.13.125950/sunshine-windows-x86_64-setup.exe"
+          Write-Host "Installing Software Automagically..."
           $ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-          try {
-              Invoke-WebRequest -Uri $sunUrl -OutFile "sun_setup.exe" -UserAgent $ua
-              Start-Process .\sun_setup.exe -ArgumentList "/S" -Wait
-              Write-Host "Sunshine Ready."
-          } catch { Write-Host "Sunshine download failed, RDP still works." }
-
-      - name: 6. Connect Tailscale
-        run: |
-          Write-Host "Deploying Tailscale..."
-          $msiUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          Invoke-WebRequest -Uri $msiUrl -OutFile "ts.msi"
+          
+          # --- Install Sunshine (Streaming) ---
+          $sunUrl = "https://github.com/LizardByte/Sunshine/releases/download/v2024.11.13.125950/sunshine-windows-x86_64-setup.exe"
+          Invoke-WebRequest -Uri $sunUrl -OutFile "sun_setup.exe" -UserAgent $ua
+          Start-Process .\sun_setup.exe -ArgumentList "/S" -Wait
+          
+          # --- Install Tailscale (Private VPN) ---
+          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
+          Invoke-WebRequest -Uri $tsUrl -OutFile "ts.msi"
           Start-Process msiexec.exe -ArgumentList "/i", "ts.msi", "/quiet", "/norestart" -Wait
           
-          $tsExe = "C:\Program Files\Tailscale\tailscale.exe"
-          $retry = 0
-          while (!(Test-Path $tsExe) -and $retry -lt 20) { Start-Sleep -Seconds 5; $retry++ }
-          
-          & $tsExe up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-multi-2026 --accept-dns=false
-          $tsIP = & $tsExe ip -4
-          echo "GOD_IP=$tsIP" >> $env:GITHUB_ENV
+          # --- Setup Ngrok (Public Access) ---
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/b34edq8Ag7W/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+          Expand-Archive -Path "ngrok.zip" -DestinationPath "." -Force
+          Write-Host "All software installed."
 
-      - name: 7. Auto-Launch & Ping Monitor
+      - name: 5. Start Networking (Tailscale & Ngrok)
+        run: |
+          Write-Host "Starting Tunnels..."
+          # รัน Tailscale
+          $tsExe = "C:\Program Files\Tailscale\tailscale.exe"
+          & $tsExe up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-omnipotent-2026 --accept-dns=false
+          $tsIP = & $tsExe ip -4
+          echo "PRIVATE_IP=$tsIP" >> $env:GITHUB_ENV
+          
+          # รัน Ngrok (Public)
+          .\ngrok.exe config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          Start-Process .\ngrok.exe -ArgumentList "tcp 3389" -WindowStyle Hidden
+          Start-Sleep -Seconds 10
+          $ngrokUrl = (Invoke-WebRequest -Uri "http://127.0.0.1:4040/api/tunnels" | ConvertFrom-Json).tunnels[0].public_url
+          $cleanNgrok = $ngrokUrl -replace "tcp://", ""
+          echo "PUBLIC_URL=$cleanNgrok" >> $env:GITHUB_ENV
+
+      - name: 6. Auto-Launch Edge (Captcha & Setup)
         run: |
           $autoScript = @"
           Start-Process "msedge.exe" "https://login.live.com"
           Start-Process "msedge.exe" "https://localhost:47990"
           Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.MessageBox]::Show('MULTI-USER READY!\n- ปิด Test Mode แล้ว\n- ลดปิง Network แล้ว\n- เข้าใช้งานได้พร้อมกันหลายคน', 'God-Mode V9')
+          [System.Windows.Forms.MessageBox]::Show('เครื่องพร้อมแล้ว!\n1. แก้ Captcha ใน Edge\n2. ตั้งค่า Sunshine ที่ localhost:47990', 'God-Mode V11')
           "@
           $autoScript | Out-File "$env:TEMP\auto_start.ps1" -Encoding utf8
           reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v "GodModeStart" /t REG_SZ /d "powershell.exe -WindowStyle Normal -File $env:TEMP\auto_start.ps1" /f
 
-      - name: 8. Keep Alive
+      - name: 7. Final Output & Keep Alive
         run: |
-          Write-Host "`n========================================"
-          Write-Host "🔱 GOD MODE V9 - THE UNSTOPPABLE!"
-          Write-Host "📍 IP: $env:GOD_IP"
-          Write-Host "👤 User: $env:FINAL_USER"
-          Write-Host "🔑 Pass: $env:FINAL_PASS"
-          Write-Host "⚡ Status: Multi-User & No-Ping Active"
-          Write-Host "========================================`n"
+          Write-Host "`n"
+          Write-Host "===================================================="
+          Write-Host "🔱 GOD MODE V11 - THE OMNIPOTENT IS ONLINE!"
+          Write-Host "📍 PRIVATE IP (Tailscale): $env:PRIVATE_IP"
+          Write-Host "🔗 PUBLIC HOST (Ngrok): $env:PUBLIC_URL"
+          Write-Host "👤 USER: RDPAdmin"
+          Write-Host "🔑 PASS: GodMode@2026!"
+          Write-Host "⚡ ทุกคนเข้าได้! หายแล็ค! ลบลายน้ำแล้ว!"
+          Write-Host "====================================================`n"
           while ($true) { Start-Sleep -Seconds 300 }
